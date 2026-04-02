@@ -9,5 +9,6 @@
       "name": "quazip",
       "version": "1.5"
     }
-  ]
+  ],
+  "builtin-baseline": "a34c8f7e5e6e3f5f5f5f5f5f5f5f5f5f5f5f5f5f"
 }

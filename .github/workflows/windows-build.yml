@@ -1,5 +1,7 @@
+========================================
+FILE: .github/workflows/windows-build.yml
+========================================
 name: Windows Build
-
 on:
   push:
     branches: [ main, master ]
@@ -10,52 +12,58 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6.6.0'
-        host: 'windows'
-        target: 'desktop'
-        arch: 'win64_msvc2019_64'
-        modules: 'qtwebengine qtwebchannel qtpositioning'
-        install-deps: true
-        cache: true
-        
-    - name: Setup Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v4
-      
-    - name: Configure CMake
-      shell: pwsh
-      run: |
-        cmake -B build `
-          -G Ninja `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_PREFIX_PATH="${env:Qt6_DIR}"
-      
-    - name: Build
-      shell: pwsh
-      run: cmake --build build --config Release
-      
-    - name: Deploy Qt dependencies
-      shell: pwsh
-      run: |
-        windeployqt build/Release/nsqcut.exe --dir build/deploy --release
-        
-    - name: Copy resources
-      shell: pwsh
-      run: |
-        if (Test-Path "resources/icons") {
-          New-Item -ItemType Directory -Force -Path "build/deploy/icons"
-          Copy-Item "resources/icons/*" -Destination "build/deploy/icons/" -Force
-        }
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: NSQCuT-Windows
-        path: build/deploy/
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.6.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtwebengine qtwebchannel qtpositioning'
+          install-deps: true
+          cache: true
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'a34c8f7e5e6e3f5f5f5f5f5f5f5f5f5f5f5f5f5f'
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v4
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -B build `
+            -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DCMAKE_PREFIX_PATH="${env:Qt6_DIR}"
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config Release
+
+      - name: Deploy Qt dependencies
+        shell: pwsh
+        run: |
+          windeployqt build/Release/nsqcut.exe --dir build/deploy --release
+
+      - name: Copy resources
+        shell: pwsh
+        run: |
+          if (Test-Path "resources/icons") {
+            New-Item -ItemType Directory -Force -Path "build/deploy/icons"
+            Copy-Item "resources/icons/*" -Destination "build/deploy/icons/" -Force
+          }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NSQCuT-Windows
+          path: build/deploy/
