@@ -42,7 +42,6 @@ public:
 int main(int argc, char *argv[])
 {
 #ifdef Q_OS_WIN
-    // Windows-specific flags
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
         "--disable-web-security "
         "--allow-running-insecure-content "
@@ -59,7 +58,6 @@ int main(int argc, char *argv[])
         "--disable-features=AudioServiceOutOfProcess "
         "--user-agent=\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36\"");
 #else
-    // Linux-specific flags
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
         "--disable-web-security "
         "--allow-running-insecure-content "

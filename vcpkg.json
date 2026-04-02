@@ -1,0 +1,13 @@
+{
+  "name": "NSQCuC",
+  "version": "1.0.0",
+  "dependencies": [
+    "quazip"
+  ],
+  "overrides": [
+    {
+      "name": "quazip",
+      "version": "1.5"
+    }
+  ]
+}

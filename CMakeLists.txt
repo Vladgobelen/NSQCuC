@@ -14,6 +14,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     WebChannel
     Network
     Concurrent
+    Qml
 )
 
 find_package(QuaZip-Qt6 REQUIRED)
@@ -46,10 +47,6 @@ qt_add_resources(NSQCuT "resources"
     resources/style.css
     resources/ipc-bridge.js
 )
-
-if(WIN32)
-    target_sources(NSQCuT PRIVATE resources/app.rc)
-endif()
 
 target_link_libraries(NSQCuT PRIVATE
     Qt6::Core
