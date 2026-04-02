@@ -27,8 +27,8 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: 'a34c8f7e5e6e3f5f5f5f5f5f5f5f5f5f5f5f5f5f'
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          # 🔥 Убрали vcpkgGitCommitId — используем последнюю стабильную версию
 
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@v4
