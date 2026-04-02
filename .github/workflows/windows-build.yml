@@ -1,0 +1,51 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.6.0'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+        modules: 'qtwebengine qtwebchannel qtnetwork qtconcurrent'
+        
+    - name: Setup Ninja
+      uses: seanmiddleditch/gha-setup-ninja@v4
+      
+    - name: Configure CMake
+      run: |
+        cmake -B build ^
+          -G Ninja ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_PREFIX_PATH="$env:Qt6_DIR" ^
+          -DQT_QMAKE_EXECUTABLE="$env:Qt6_DIR/bin/qmake.exe"
+      shell: pwsh
+      
+    - name: Build
+      run: cmake --build build --config Release
+      
+    - name: Deploy Qt dependencies
+      run: |
+        windeployqt build/Release/nsqcut.exe --dir build/deploy
+      shell: pwsh
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NSQCuT-Windows
+        path: build/deploy/

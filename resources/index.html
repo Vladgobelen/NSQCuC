@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NSQCuT - Ночная стража</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <h1>NSQCuT - Менеджер аддонов</h1>
+            <button id="voice-btn" class="voice-btn" title="Щебетало">🎤</button>
+        </div>
+        <div class="game-panel">
+            <span id="game-status">Проверка игры...</span>
+            <div style="display: flex; gap: 5px">
+                <button id="change-path-btn" class="logs-btn" style="padding: 8px 10px">
+                    Изменить путь
+                </button>
+                <button id="launch-btn" disabled>Запустить игру</button>
+            </div>
+        </div>
+        <div class="divider"></div>
+        <div class="addons-header">
+            <h2>Доступные аддоны</h2>
+            <button id="logs-btn" class="logs-btn">Логи</button>
+        </div>
+        <div class="addons-list" id="addons-list"></div>
+    </div>
+
+    <div id="voice-chat-view" class="voice-chat-view hidden">
+        <div id="voice-hover-zone"></div>
+        <div class="voice-chat-header" id="voice-chat-header">
+            <button id="back-to-addons-btn" class="back-btn">← Назад</button>
+            <button id="voice-mic-btn" class="mic-btn" title="Включить/выключить микрофон">
+                🎤
+            </button>
+            <span class="voice-chat-title">Щебетало</span>
+        </div>
+        <!-- 🔥 iframe БЕЗ sandbox — ПОЛНЫЙ ДОСТУП К МИКРОФОНУ -->
+        <iframe
+            id="voice-chat-frame"
+            src="about:blank"
+            allow="camera; microphone; autoplay; display-capture; clipboard-read; clipboard-write; fullscreen; picture-in-picture; screen-wake-lock; geolocation; speaker-selection; encrypted-media; midi; sync-xhr; usb; web-share; xr-spatial-tracking"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            credentialless
+            allowtransparency="true"
+        ></iframe>
+    </div>
+
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script src="qrc:/resources/ipc-bridge.js"></script>
+    <script src="qrc:/resources/renderer.js"></script>
+</body>
+</html>
