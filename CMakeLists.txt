@@ -14,7 +14,6 @@ find_package(Qt6 REQUIRED COMPONENTS
     WebChannel
     Network
     Concurrent
-    Qml
 )
 
 find_package(QuaZip-Qt6 REQUIRED)
@@ -34,13 +33,11 @@ set(HEADERS
     src/gamelauncher.h
 )
 
-# Создаём исполняемый файл
 qt_add_executable(NSQCuT
     ${SOURCES}
     ${HEADERS}
 )
 
-# Ресурсы
 qt_add_resources(NSQCuT "resources"
     PREFIX "/"
     FILES
@@ -50,7 +47,6 @@ qt_add_resources(NSQCuT "resources"
     resources/ipc-bridge.js
 )
 
-# Иконка для Windows
 if(WIN32)
     target_sources(NSQCuT PRIVATE resources/app.rc)
 endif()
@@ -65,7 +61,6 @@ target_link_libraries(NSQCuT PRIVATE
     QuaZip::QuaZip
 )
 
-# Настройки для разных платформ
 if(UNIX AND NOT APPLE)
     set_target_properties(NSQCuT PROPERTIES
         OUTPUT_NAME "nsqcut"
@@ -76,10 +71,3 @@ elseif(WIN32)
         WIN32_EXECUTABLE TRUE
     )
 endif()
-
-# Установка
-install(TARGETS NSQCuT
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)

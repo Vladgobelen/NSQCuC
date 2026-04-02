@@ -13,10 +13,6 @@
 #include <QWebEngineSettings>
 #include "backend.h"
 
-#ifdef Q_OS_WIN
-#include <windows.h>
-#endif
-
 Q_LOGGING_CATEGORY(mainLog, "nsqcut.main")
 
 class CspInterceptor : public QWebEngineUrlRequestInterceptor

@@ -19,7 +19,7 @@ BEGIN
             VALUE "FileDescription", "NSQCuT - Менеджер аддонов"
             VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "nsqcut"
-            VALUE "LegalCopyright", "Copyright © 2024"
+            VALUE "LegalCopyright", "Copyright 2024"
             VALUE "OriginalFilename", "nsqcut.exe"
             VALUE "ProductName", "NSQCuT"
             VALUE "ProductVersion", "1.0.0.0"

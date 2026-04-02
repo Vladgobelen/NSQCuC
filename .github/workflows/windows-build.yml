@@ -22,7 +22,8 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_msvc2019_64'
-        modules: 'qtwebengine qtwebchannel qtnetwork qtconcurrent'
+        modules: 'qtwebengine qtwebchannel'
+        install-deps: true
         
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@v4
@@ -32,8 +33,7 @@ jobs:
         cmake -B build ^
           -G Ninja ^
           -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_PREFIX_PATH="$env:Qt6_DIR" ^
-          -DQT_QMAKE_EXECUTABLE="$env:Qt6_DIR/bin/qmake.exe"
+          -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
       shell: pwsh
       
     - name: Build
@@ -41,7 +41,13 @@ jobs:
       
     - name: Deploy Qt dependencies
       run: |
-        windeployqt build/Release/nsqcut.exe --dir build/deploy
+        windeployqt build/Release/nsqcut.exe --dir build/deploy --release
+      shell: pwsh
+      
+    - name: Copy resources
+      run: |
+        mkdir build\deploy\resources
+        copy resources\icons\* build\deploy\icons\
       shell: pwsh
       
     - name: Upload artifact
