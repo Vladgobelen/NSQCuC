@@ -1,8 +1,13 @@
 {
-  "name": "nsqcut",
+  "name": "NSQCuC",
   "version": "1.0.0",
   "dependencies": [
-    "quazip"
+    "quazip",
+    "qtbase",
+    "qtwebengine",
+    "qtwebchannel",
+    "qtdeclarative",
+    "qt5compat"
   ],
   "builtin-baseline": "dbbd673624c057174dd51ef85758951032717715"
 }
