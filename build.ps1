@@ -1,201 +1,92 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("Debug", "Release")]
-    [string]$Configuration = "Release",
-    
-    [switch]$Clean,
-    
-    [switch]$SkipVcpkg,
-    
     [string]$QtPath = "C:/Qt/6.6.0/msvc2019_64",
-    
-    [string]$VcpkgPath = "C:/vcpkg"
+    [string]$VcpkgPath = "C:/vcpkg",
+    [switch]$Clean,
+    [switch]$SkipVcpkg
 )
 
-# 🔥 Цветной вывод для наглядности
-function Write-Step { param([string]$Message) Write-Host "`n[✓] $Message" -ForegroundColor Cyan }
-function Write-Error { param([string]$Message) Write-Host "`n[✗] $Message" -ForegroundColor Red }
-function Write-Warn  { param([string]$Message) Write-Host "`n[!] $Message" -ForegroundColor Yellow }
-function Write-Debug { param([string]$Message) Write-Host "    [dbg] $Message" -ForegroundColor DarkGray }
+function Step { param($msg) Write-Host "[STEP] $msg" }
+function Info { param($msg) Write-Host "  [INFO] $msg" }
+function Error { param($msg) Write-Host "  [ERROR] $msg" -ForegroundColor Red }
 
-# 🔥 Проверка на ошибки
-function Check-Result {
-    param([string]$StepName)
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "$StepName failed with code $LASTEXITCODE"
-        exit 1
-    }
-    Write-Debug "$StepName completed successfully"
-}
+Write-Host "[START] NSQCuT build script"
 
-# ==================== НАЧАЛО ====================
-Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "  NSQCuT Build Script (Windows)" -ForegroundColor Green
-Write-Host "  Config: $Configuration | Clean: $Clean | SkipVcpkg: $SkipVcpkg" -ForegroundColor Green
-Write-Host "  Qt: $QtPath | vcpkg: $VcpkgPath" -ForegroundColor Green
-Write-Host "========================================`n" -ForegroundColor Green
+# Проверка путей
+Step "Checking paths"
+if (-not (Test-Path $QtPath)) { Error "Qt not found: $QtPath"; exit 1 }
+Info "Qt: $QtPath"
+if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) { Error "CMake not in PATH"; exit 1 }
+Info "CMake: $((Get-Command cmake).Version)"
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Error "Git not in PATH"; exit 1 }
+Info "Git: $((Get-Command git).Version)"
 
-# 1️⃣ Проверка окружения
-Write-Step "Checking environment..."
-
-# Проверка Visual Studio
-$vsWhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
-if (Test-Path $vsWhere) {
-    $vsInfo = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-    if ($vsInfo) {
-        Write-Debug "Visual Studio found: $vsInfo"
-        # Загружаем окружение MSVC
-        $vcVars = "$vsInfo\VC\Auxiliary\Build\vcvars64.bat"
-        if (Test-Path $vcVars) {
-            Write-Debug "Loading MSVC environment from $vcVars"
-            cmd /c "call `"$vcVars`" && set" | ForEach-Object {
-                $name, $value = $_ -split '=', 2
-                if ($name -and $value) {
-                    Set-Item -Path "env:$name" -Value $value -Force
-                }
-            }
-        }
-    }
-}
-
-# Проверка Qt
-if (-not (Test-Path "$QtPath/bin/qmake.exe")) {
-    Write-Error "Qt not found at $QtPath"
-    Write-Warn "Set correct path with -QtPath parameter"
-    exit 1
-}
-Write-Debug "Qt found: $QtPath"
-
-# Проверка CMake
-$cmake = Get-Command cmake -ErrorAction SilentlyContinue
-if (-not $cmake) {
-    Write-Error "CMake not found in PATH"
-    exit 1
-}
-Write-Debug "CMake: $($cmake.Version)"
-
-# Проверка Git
-$git = Get-Command git -ErrorAction SilentlyContinue
-if (-not $git) {
-    Write-Error "Git not found in PATH"
-    exit 1
-}
-Write-Debug "Git: $($git.Version)"
-
-# 2️⃣ Настройка vcpkg (если не пропущено)
+# vcpkg
 if (-not $SkipVcpkg) {
-    Write-Step "Setting up vcpkg..."
-    
+    Step "Setting up vcpkg"
     if (-not (Test-Path "$VcpkgPath/vcpkg.exe")) {
-        Write-Debug "Cloning vcpkg to $VcpkgPath..."
+        Info "Cloning vcpkg to $VcpkgPath"
         if (Test-Path $VcpkgPath) { Remove-Item -Recurse -Force $VcpkgPath }
         git clone https://github.com/microsoft/vcpkg.git $VcpkgPath
-        Check-Result "vcpkg clone"
-        
-        Write-Debug "Bootstrapping vcpkg..."
+        if ($LASTEXITCODE -ne 0) { Error "vcpkg clone failed"; exit 1 }
         Push-Location $VcpkgPath
         .\bootstrap-vcpkg.bat
-        Check-Result "vcpkg bootstrap"
+        if ($LASTEXITCODE -ne 0) { Error "vcpkg bootstrap failed"; exit 1 }
         Pop-Location
     }
-    
-    # Установка QuaZip для Qt6
-    Write-Debug "Installing quazip[qt6]:x64-windows..."
+    Info "Installing quazip[qt6]"
     Push-Location $VcpkgPath
     .\vcpkg install "quazip[qt6]:x64-windows"
-    Check-Result "vcpkg install quazip"
+    if ($LASTEXITCODE -ne 0) { Error "vcpkg install failed"; exit 1 }
     Pop-Location
-} else {
-    Write-Warn "Skipping vcpkg setup (--SkipVcpkg)"
 }
 
-# 3️⃣ Очистка (если запрошено)
-if ($Clean) {
-    Write-Step "Cleaning build directory..."
-    if (Test-Path "build") {
-        Remove-Item -Recurse -Force "build"
-        Write-Debug "build/ removed"
-    }
+# Очистка
+if ($Clean -and (Test-Path "build")) {
+    Step "Cleaning build directory"
+    Remove-Item -Recurse -Force "build"
 }
 
-# 4️⃣ Создание папки сборки
-$BuildDir = "build"
-if (-not (Test-Path $BuildDir)) {
-    New-Item -ItemType Directory -Path $BuildDir | Out-Null
-    Write-Debug "Created $BuildDir/"
-}
-
-# 5️⃣ Генерация проекта через CMake
-Write-Step "Configuring CMake..."
-Push-Location $BuildDir
-
-$cmakeArgs = @(
-    "-G", "Ninja",
-    "-DCMAKE_BUILD_TYPE=$Configuration",
-    "-DCMAKE_TOOLCHAIN_FILE=$VcpkgPath/scripts/buildsystems/vcpkg.cmake",
-    "-DCMAKE_PREFIX_PATH=$QtPath",
-    "-DVCPKG_TARGET_TRIPLET=x64-windows",
-    "--debug-find-pkg=Qt6,QuaZip",  # 🔥 Отладка поиска пакетов
-    ".."
-)
-
-Write-Debug "CMake command: cmake $($cmakeArgs -join ' ')"
-cmake @cmakeArgs 2>&1 | Tee-Object -Variable cmakeLog
-Check-Result "CMake configure"
-
-# 🔥 Выводим, какие пакеты нашёл CMake
-Write-Debug "=== CMake find_package results ==="
-$cmakeLog | Select-String "Found.*:" | ForEach-Object { Write-Debug $_ }
-
+# CMake configure
+Step "Configuring CMake"
+if (-not (Test-Path "build")) { New-Item -ItemType Directory -Path "build" | Out-Null }
+Push-Location build
+cmake -G Ninja `
+    -DCMAKE_BUILD_TYPE=Release `
+    -DCMAKE_TOOLCHAIN_FILE="$VcpkgPath/scripts/buildsystems/vcpkg.cmake" `
+    -DCMAKE_PREFIX_PATH="$QtPath" `
+    -DVCPKG_TARGET_TRIPLET=x64-windows `
+    .. 2>&1
+if ($LASTEXITCODE -ne 0) { Error "CMake configure failed"; Pop-Location; exit 1 }
 Pop-Location
+Info "CMake configure OK"
 
-# 6️⃣ Сборка
-Write-Step "Building project ($Configuration)..."
-Push-Location $BuildDir
-
-cmake --build . --config $Configuration --verbose 2>&1 | Tee-Object -Variable buildLog
-Check-Result "CMake build"
-
+# Build
+Step "Building project"
+Push-Location build
+cmake --build . --config Release --verbose 2>&1
+if ($LASTEXITCODE -ne 0) { Error "Build failed"; Pop-Location; exit 1 }
 Pop-Location
+Info "Build OK"
 
-# 7️⃣ Поиск артефакта
-$ExePath = "build/$Configuration/nsqcut.exe"
-if (Test-Path $ExePath) {
-    Write-Step "Build successful! ✓"
-    Write-Host "  Executable: $ExePath" -ForegroundColor Green
-    Write-Host "  Size: $((Get-Item $ExePath).Length / 1MB -as [int]) MB" -ForegroundColor Green
+# Проверка артефакта
+$exe = "build/Release/nsqcut.exe"
+if (Test-Path $exe) {
+    Info "Executable: $exe"
+    Info "Size: $((Get-Item $exe).Length / 1MB) MB"
 } else {
-    Write-Warn "Executable not found at $ExePath"
-    Write-Debug "Searching for .exe files in build/..."
-    Get-ChildItem -Recurse -Path build -Filter "*.exe" | ForEach-Object {
-        Write-Debug "  Found: $($_.FullName)"
-    }
+    Error "Executable not found: $exe"
+    exit 1
 }
 
-# 8️⃣ Деплой зависимостей Qt (опционально)
-Write-Step "Deploying Qt dependencies..."
-$windeployqt = "$QtPath/bin/windeployqt.exe"
-if (Test-Path $windeployqt) {
-    $targetExe = "build/$Configuration/nsqcut.exe"
-    if (Test-Path $targetExe) {
-        Write-Debug "Running windeployqt for $targetExe"
-        & $windeployqt --release --dir build/deploy $targetExe
-        Check-Result "windeployqt"
-        Write-Debug "Qt dependencies deployed to build/deploy/"
-    } else {
-        Write-Warn "Executable not found, skipping windeployqt"
-    }
+# windeployqt
+Step "Deploying Qt dependencies"
+$wdqt = "$QtPath/bin/windeployqt.exe"
+if (Test-Path $wdqt) {
+    & $wdqt --release --dir build/deploy $exe 2>&1
+    if ($LASTEXITCODE -ne 0) { Error "windeployqt failed" } else { Info "windeployqt OK" }
 } else {
-    Write-Warn "windeployqt not found at $windeployqt"
+    Info "windeployqt not found, skipping"
 }
 
-# ==================== ФИНАЛ ====================
-Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "  Build completed!" -ForegroundColor Green
-Write-Host "========================================`n" -ForegroundColor Green
-
-# 🔥 Быстрый тест запуска (если не в CI)
-if ($env:CI -ne "true" -and (Test-Path $ExePath)) {
-    Write-Host "  Test run: .\$ExePath" -ForegroundColor Cyan
-    # & $ExePath  # Раскомментируйте для автозапуска
-}
+Write-Host "[DONE] Build completed"
